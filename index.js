@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { MongoClient } = require('mongodb');
+const { MongoClient, Admin } = require('mongodb');
 require('dotenv').config();
 const ObjectId = require('mongodb').ObjectId;
 
@@ -71,6 +71,18 @@ async function run() {
             res.json(reviews);
         });
 
+        //user(admin) get api
+        app.get('/users/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email }
+            const user = await usersCollection.findOne(query);
+            let isAdmin = false;
+            if (user?.role === 'admin') {
+                isAdmin = true;
+            }
+            res.json({ admin: isAdmin });
+        });
+
         //users post api
         app.post('/users', async (req, res) => {
             const users = req.body;
@@ -78,17 +90,26 @@ async function run() {
             res.json(result);
         });
 
-        //users get api
+        //users put api
 
         app.put('/users', async (req, res) => {
             const user = req.body;
             const filter = { email: user.email }
             const options = { upsert: true }
             const updateDoc = { $set: user }
-            const result = usersCollection.updateOne(filter, updateDoc, options)
+            const result = await usersCollection.updateOne(filter, updateDoc, options)
             res.json(result);
         });
 
+        //admin
+        app.put('/users/admin', async (req, res) => {
+            const user = req.body;
+            const filter = { email: user.email }
+            const updateDoc = { $set: { role: 'admin' } }
+            const result = await usersCollection.updateOne(filter, updateDoc)
+            res.json(result);
+
+        })
 
         //Delete products 
         app.delete('/products/:id', async (req, res) => {
